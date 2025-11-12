@@ -45,3 +45,9 @@ cargo clippy             # Lint Rust code
 - Tauri allows building lightweight desktop apps with web frontends
 - Rust backend handles file I/O for Star Citizen keybinding files
 - Frontend provides UI for mapping configuration
+
+## Version Management
+- Version is maintained in 3 places: `tauri.conf.json`, `Cargo.toml`, and `package.json`
+- The HTML header dynamically loads the version from Cargo.toml at runtime
+- To update version: change all 3 files to keep them in sync
+- See VERSION.md for details

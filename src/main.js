@@ -2858,3 +2858,22 @@ async function fallbackResetBinding()
     alert(`Error: ${error}`);
   }
 }
+
+// =====================
+// INITIALIZE VERSION ON STARTUP
+// =====================
+(async () =>
+{
+  try
+  {
+    const version = await invoke('get_app_version');
+    const versionElement = document.getElementById('app-version');
+    if (versionElement)
+    {
+      versionElement.textContent = `v${version}`;
+    }
+  } catch (error)
+  {
+    console.error('Failed to load app version:', error);
+  }
+})();

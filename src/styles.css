@@ -276,6 +276,11 @@ p[style*="color: red"] {
   margin-top: 1.5rem;
 }
 
+#app-version {
+  font-size: 0.8em;
+  color: #8f6969;
+}
+
 /* App Layout */
 .app-container {
   display: flex;

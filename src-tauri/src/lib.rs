@@ -6,6 +6,12 @@ mod directinput;
 
 use keybindings::{ActionMaps, OrganizedKeybindings, AllBinds, MergedBindings, ActionMap, Action};
 
+// Command to get the app version from Cargo.toml
+#[tauri::command]
+fn get_app_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
 // Struct for returning conflicting binding information
 #[derive(serde::Serialize)]
 struct ConflictingBinding {
@@ -706,6 +712,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(Mutex::new(AppState::new()))
         .invoke_handler(tauri::generate_handler![
+            get_app_version,
             greet,
             detect_joysticks,
             wait_for_input_binding,
