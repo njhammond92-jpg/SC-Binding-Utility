@@ -22,10 +22,17 @@ function getCurrentVersion()
 
 // Compare two semantic versions
 // Returns: -1 if v1 < v2, 0 if equal, 1 if v1 > v2
+// Handles pre-release identifiers (e.g., "0.5.0-beta" is treated as "0.5.0" for comparison)
 function compareVersions(v1, v2)
 {
-    const parts1 = v1.split('.').map(Number);
-    const parts2 = v2.split('.').map(Number);
+    // Strip pre-release identifiers (e.g., "-beta", "-alpha", "-rc1")
+    const stripPrerelease = (version) => version.split('-')[0];
+
+    const cleanV1 = stripPrerelease(v1);
+    const cleanV2 = stripPrerelease(v2);
+
+    const parts1 = cleanV1.split('.').map(Number);
+    const parts2 = cleanV2.split('.').map(Number);
 
     for (let i = 0; i < Math.max(parts1.length, parts2.length); i++)
     {

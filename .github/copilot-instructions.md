@@ -47,7 +47,7 @@ cargo clippy             # Lint Rust code
 - Frontend provides UI for mapping configuration
 
 ## Version Management
-- Version is maintained in 3 places: `tauri.conf.json`, `Cargo.toml`, and `package.json`
+- Version is maintained in 4 places: `tauri.conf.json`, `Cargo.toml`, `package.json`, and `index.html`
 - The HTML header dynamically loads the version from Cargo.toml at runtime
-- To update version: change all 3 files to keep them in sync
+- To update version: change all 4 files to keep them in sync
 - See VERSION.md for details

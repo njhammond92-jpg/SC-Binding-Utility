@@ -82,6 +82,9 @@ Star Citizen Joystick Mapper simplifies the complex task of configuring control 
 
 - DirectInput-based joystick detection (Windows only)
 
+## AI Disclaimer
+- This utility was created with vibes and some old fashioned analog brain.
+
 ## License
 
 This project is designed for personal use with Star Citizen by Cloud Imperium Games.

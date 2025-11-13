@@ -2823,7 +2823,7 @@ function updateUnsavedIndicator()
 
     if (indicator && fileNameEl)
     {
-        if (hasUnsavedChanges)
+        if (typeof hasUnsavedChanges !== 'undefined' && hasUnsavedChanges)
         {
             indicator.style.borderColor = 'var(--accent-primary)';
             indicator.style.backgroundColor = 'rgba(217, 83, 79, 0.1)';

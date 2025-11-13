@@ -8,6 +8,7 @@ import
     ButtonFrameHeight,
     HatFrameWidth,
     HatFrameHeight,
+    HatSpacing,
     simplifyButtonName,
     drawConnectingLine,
     drawButtonMarker,
@@ -299,7 +300,6 @@ async function onTemplateFileSelected(e)
             console.log('window.updateTemplateIndicator is not available');
         }
 
-        hasUnsavedChanges = false;
         displayTemplate();
 
     } catch (error)
