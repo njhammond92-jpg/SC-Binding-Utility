@@ -753,8 +753,8 @@ fn clear_specific_binding(
                     .iter_mut()
                     .find(|a| a.name == action_name)
                 {
-                    // Remove existing bindings of this input type
-                    action.rebinds.retain(|r| r.get_input_type() != input_type);
+                    // Remove only the specific binding that matches input_to_clear
+                    action.rebinds.retain(|r| r.input != input_to_clear);
                     eprintln!("Removed binding without adding cleared entry");
                 }
             }
@@ -810,8 +810,8 @@ fn clear_specific_binding(
             action_map.actions.last_mut().unwrap()
         };
 
-        // Remove existing bindings of this input type
-        action.rebinds.retain(|r| r.get_input_type() != input_type);
+        // Remove only the specific binding that matches input_to_clear
+        action.rebinds.retain(|r| r.input != input_to_clear);
 
         // Add the cleared binding (with trailing space to indicate it's explicitly unbound)
         action.rebinds.push(keybindings::Rebind {

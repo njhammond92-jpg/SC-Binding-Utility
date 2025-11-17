@@ -241,7 +241,6 @@ function loadPageImage(page)
             resizeImage(img, 1024, (resizedImg) =>
             {
                 loadedImage = resizedImg;
-                document.getElementById('canvas-overlay').classList.add('hidden');
                 redraw();
             });
         };
@@ -280,19 +279,6 @@ function loadPageImage(page)
     {
         // No image for this page
         loadedImage = null;
-
-        // If the page has buttons, hide the overlay so they can be seen
-        // Otherwise show the overlay with the welcome message
-        const pageHasButtons = Array.isArray(page.buttons) && page.buttons.length > 0;
-        if (pageHasButtons)
-        {
-            document.getElementById('canvas-overlay').classList.add('hidden');
-        }
-        else
-        {
-            document.getElementById('canvas-overlay').classList.remove('hidden');
-        }
-
         redraw();
     }
 }
@@ -352,9 +338,6 @@ window.initializeTemplateEditor = function ()
         onPageSelected: handleTemplatePageSelected
     });
 
-    // Update stick mapping display
-    updateStickMappingDisplay();
-
     // Ensure canvas is sized after layout is complete
     requestAnimationFrame(() =>
     {
@@ -399,20 +382,7 @@ function initializeEventListeners()
     document.getElementById('mirror-template-btn').addEventListener('click', mirrorTemplate);
     document.getElementById('change-joystick-number-btn').addEventListener('click', changeAllJoystickNumbers);
 
-    // Template joystick mapping modal
-    const configureJoysticksBtn = document.getElementById('configure-template-joysticks-btn');
-    const templateJoyMappingClose = document.getElementById('template-joystick-mapping-close');
-    const templateJoyMappingCancel = document.getElementById('template-joystick-mapping-cancel');
-    const detectRightStickBtn = document.getElementById('detect-right-stick-btn');
-    const detectLeftStickBtn = document.getElementById('detect-left-stick-btn');
-    const templateJoyMappingSave = document.getElementById('template-joystick-mapping-save');
 
-    if (configureJoysticksBtn) configureJoysticksBtn.addEventListener('click', openTemplateJoystickMappingModal);
-    if (templateJoyMappingClose) templateJoyMappingClose.addEventListener('click', closeTemplateJoystickMappingModal);
-    if (templateJoyMappingCancel) templateJoyMappingCancel.addEventListener('click', closeTemplateJoystickMappingModal);
-    if (detectRightStickBtn) detectRightStickBtn.addEventListener('click', () => detectStick('right'));
-    if (detectLeftStickBtn) detectLeftStickBtn.addEventListener('click', () => detectStick('left'));
-    if (templateJoyMappingSave) templateJoyMappingSave.addEventListener('click', saveTemplateJoystickMapping);
 
     // Zoom controls
     document.getElementById('zoom-in-btn').addEventListener('click', () => zoomBy(0.1));
@@ -433,7 +403,8 @@ function initializeEventListeners()
     {
         // Don't trigger shortcuts when modals are open
         const buttonModal = document.getElementById('button-modal');
-        if (buttonModal && buttonModal.style.display === 'flex')
+        const pageModal = document.getElementById('page-modal');
+        if ((buttonModal && buttonModal.style.display === 'flex') || (pageModal && pageModal.style.display === 'flex'))
         {
             return; // Modal is open, don't handle shortcuts
         }
@@ -441,6 +412,13 @@ function initializeEventListeners()
         if (e.key.toLowerCase() === 'f' && loadedImage)
         {
             fitToScreen();
+        }
+
+        // Tab key to navigate pages
+        if (e.key === 'Tab')
+        {
+            e.preventDefault(); // Prevent default tab focus behavior
+            navigatePages(e.shiftKey ? -1 : 1); // Shift+Tab goes back, Tab goes forward
         }
     });
 
@@ -477,6 +455,50 @@ function initializeEventListeners()
     // Hidden file inputs
     // Legacy image file input - removed since per-page images are now handled in page modal
     // Keep the element for backward compatibility if needed
+}
+
+function navigatePages(direction)
+{
+    if (!templateData.pages || templateData.pages.length === 0) return;
+
+    const currentIndex = templateData.pages.findIndex(p => p.id === currentPageId);
+    if (currentIndex === -1) return;
+
+    const nextIndex = (currentIndex + direction + templateData.pages.length) % templateData.pages.length;
+    const nextPageId = templateData.pages[nextIndex].id;
+
+    selectPageInternal(nextPageId);
+}
+
+function selectPageInternal(pageId)
+{
+    if (!pageId || !Array.isArray(templateData.pages)) return;
+
+    currentPageId = pageId;
+
+    // Find the page and load its data
+    const page = templateData.pages.find(p => p.id === pageId);
+    if (page)
+    {
+        // Update button list to show this page's buttons
+        updateButtonList();
+
+        // Clear selection when switching pages
+        selectButton(null);
+
+        // Load the page's image (or mirrored image) - this will call redraw when done
+        loadPageImage(page);
+    }
+
+    // Notify template-editor-v2 about the page change - use window.selectPage if available
+    if (window.selectPage)
+    {
+        window.selectPage(pageId);
+    }
+    else if (window.templateEditorCallbacks?.onPageSelected)
+    {
+        window.templateEditorCallbacks.onPageSelected(pageId);
+    }
 }
 
 function resizeCanvas()
@@ -907,10 +929,6 @@ async function newTemplate()
     // Reset UI
     document.getElementById('template-name').value = '';
     document.getElementById('joystick-model').value = '';
-    updateStickMappingDisplay();
-
-    // Hide overlay message
-    document.getElementById('canvas-overlay').classList.remove('hidden');
 
     // Reset canvas
     loadedImage = null;
@@ -1151,11 +1169,9 @@ function onCanvasMouseDown(event)
     // Only handle left click for button operations below this point
     if (event.button !== 0) return;
 
-    // Need an image to work with buttons
-    if (!loadedImage) return;
-
     if (mode === 'view')
     {
+        // Can select buttons even without an image for reference
         // Check if clicking on a handle
         const handle = findHandleAtPosition(coords);
         if (handle)
@@ -1483,70 +1499,34 @@ function updateZoomDisplay()
 // Button management
 async function startAddButton()
 {
-    if (!loadedImage)
+    // Get the current page and its device configuration
+    const currentPage = getCurrentPage();
+    if (!currentPage)
     {
         const showAlert = window.showAlert || alert;
-        await showAlert('Please load an image first', 'Load Image First');
-        if (window.showAlert)
-        {
-            highlightLoadImageButton();
-        }
+        await showAlert('Please select or create a page first before adding buttons.', 'No Page Selected');
         return;
     }
 
-    // Check if current stick is mapped to a physical joystick
-    const currentStickData = currentStick === 'left' ? templateData.leftStick : templateData.rightStick;
-    const stickName = currentStick === 'left' ? 'Left Stick' : 'Right Stick';
-    const jsNum = currentStickData?.joystickNumber || (currentStick === 'left' ? 1 : 2);
-
-    if (!currentStickData?.physicalJoystickId && currentStickData?.physicalJoystickId !== 0)
+    // For new pages-based system: check if device is configured
+    if (!currentPage.device_uuid)
     {
-        // Show message that they need to configure the joystick mapping first
         const showAlert = window.showAlert || alert;
         await showAlert(
-            `Please configure the joystick mapping for the ${stickName} (js${jsNum}) before adding buttons.\n\n` +
-            `Click "⚙️ Set Joystick Mapping" at the top of the page, then:\n` +
-            `1. Click "Test" next to your physical ${stickName.toLowerCase()}\n` +
-            `2. Press any button on that device to detect it\n` +
-            `3. Select "${stickName}" from the dropdown\n` +
-            `4. Click "Save Mapping"\n\n` +
-            `Note: Your joystick may be detected as js1, js2, js3, etc. - any number is fine!`,
-            'Configure Joystick Mapping Required'
+            `Please configure a device for the "${currentPage.name || 'Untitled Page'}" page first.\n\n` +
+            `Click the "Edit" button on the page, then:\n` +
+            `1. Click "🎯 Press Button on Device"\n` +
+            `2. Press any button on your joystick\n` +
+            `3. Click "Save Page"\n\n` +
+            `After that, you'll be able to add buttons to this page.`,
+            'Configure Device First'
         );
-
-        // Highlight the configure button with animation - now that alert has resolved
-        if (window.showAlert)
-        {
-            highlightConfigureButton();
-        }
         return;
     }
 
     mode = 'placing-button';
     canvas.style.cursor = 'crosshair';
     selectButton(null);
-}
-
-function highlightConfigureButton()
-{
-    const configBtn = document.getElementById('configure-template-joysticks-btn');
-    const mappingDisplay = document.getElementById('stick-mapping-display');
-
-    if (!configBtn) return;
-
-    // Add highlight animation class
-    configBtn.classList.add('highlight-pulse');
-    if (mappingDisplay) mappingDisplay.classList.add('highlight-pulse');
-
-    // Scroll the button into view smoothly
-    configBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    // Remove animation after 3 seconds
-    setTimeout(() =>
-    {
-        configBtn.classList.remove('highlight-pulse');
-        if (mappingDisplay) mappingDisplay.classList.remove('highlight-pulse');
-    }, 3000);
 }
 
 function highlightLoadImageButton()
@@ -2288,6 +2268,45 @@ function onButtonTypeChange()
     }
 }
 
+// Helper function to detect input with dual-stage trigger support
+// When a second button is detected before the first releases, use the second one
+async function detectInputWithDualStageSupport(sessionId, timeoutSecs = 10)
+{
+    const result = await invoke('wait_for_input_binding', {
+        timeoutSecs: timeoutSecs,
+        sessionId: sessionId.toString()
+    });
+
+    if (!result)
+    {
+        return null; // Timeout or no input
+    }
+
+    // Store the first detected input
+    const firstInput = result;
+    console.log('[DUAL-STAGE] First input detected:', firstInput.input_string);
+
+    // Wait briefly to see if a second input comes in before the first releases
+    // This is useful for dual-stage triggers
+    const dualStageWaitTime = 300; // milliseconds to wait for second input
+    const secondResult = await Promise.race([
+        invoke('wait_for_input_binding', {
+            timeoutSecs: Math.ceil(dualStageWaitTime / 1000),
+            sessionId: (sessionId + '-secondary').toString()
+        }),
+        new Promise(resolve => setTimeout(() => resolve(null), dualStageWaitTime))
+    ]);
+
+    if (secondResult && secondResult.input_string && secondResult.input_string !== firstInput.input_string)
+    {
+        console.log('[DUAL-STAGE] Second input detected while first held:', secondResult.input_string, '- using second input');
+        return secondResult; // Use the second input instead
+    }
+
+    console.log('[DUAL-STAGE] No secondary input detected, using first:', firstInput.input_string);
+    return firstInput; // Use the first input
+}
+
 // Hat switch input detection
 async function startHatInputDetection(direction)
 {
@@ -2313,10 +2332,8 @@ async function startHatInputDetection(direction)
 
     try
     {
-        const result = await invoke('wait_for_input_binding', {
-            timeoutSecs: 10,
-            sessionId: thisSessionId.toString()
-        });
+        // Use enhanced detection with dual-stage trigger support
+        const result = await detectInputWithDualStageSupport(thisSessionId, 10);
 
         // Check if this session is still active
         if (currentHatDetectionSessionId !== thisSessionId)
@@ -2333,23 +2350,22 @@ async function startHatInputDetection(direction)
             // The Rust backend now returns proper Star Citizen format
             // Examples: "js1_hat1_up", "js1_button3", "js2_axis2"
 
-            // Get the current stick's configuration
-            const currentStickData = currentStick === 'left' ? templateData.leftStick : templateData.rightStick;
+            // Get the current page's configuration
+            const currentPage = getCurrentPage();
+            const currentStickData = currentPage || (currentStick === 'left' ? templateData.leftStick : templateData.rightStick);
             const templateJsNum = (currentStickData && currentStickData.joystickNumber) || templateData.joystickNumber || 1;
-            const detectedJsNumber = currentStickData?.detectedJsNumber;
 
-            // Extract the actual js number from the detected input
-            const inputMatch = result.input_string.match(/^(js|gp)(\d+)_/);
-            const actualJsNum = inputMatch ? parseInt(inputMatch[2]) : null;
+            // For pages: use device_uuid to validate, for legacy sticks: use detectedJsNumber
+            const pageDeviceUuid = currentPage?.device_uuid;
+            const detectedDeviceUuid = result.device_uuid;
 
             // Validate that input is from the configured device (if configured)
-            if (detectedJsNumber && actualJsNum && actualJsNum !== detectedJsNumber)
+            if (pageDeviceUuid && detectedDeviceUuid && pageDeviceUuid !== detectedDeviceUuid)
             {
-                console.warn(`Input from js${actualJsNum} but expected js${detectedJsNumber}`);
-                const stickName = currentStick === 'left' ? 'Left Stick' : 'Right Stick';
-                const otherStickName = currentStick === 'left' ? 'Right Stick' : 'Left Stick';
+                console.warn(`Input from device ${detectedDeviceUuid} but expected ${pageDeviceUuid}`);
+                const pageName = currentPage?.name || 'this page';
                 document.getElementById('hat-detection-status').textContent =
-                    `⚠️ That input is from a device not mapped to the ${stickName}. It may be mapped to the ${otherStickName} or not configured. Switch sticks or reconfigure your joystick mapping.`;
+                    `⚠️ That input is from a device not assigned to ${pageName}. Please use the device you configured for this page.`;
                 document.getElementById('hat-detection-status').style.color = '#f0ad4e';
                 return;
             }
@@ -2465,11 +2481,8 @@ async function startInputDetection()
 
     try
     {
-        // Use the Rust backend to detect input (10 second timeout)
-        const result = await invoke('wait_for_input_binding', {
-            timeoutSecs: 10,
-            sessionId: thisSessionId.toString()
-        });
+        // Use enhanced detection with dual-stage trigger support
+        const result = await detectInputWithDualStageSupport(thisSessionId, 10);
 
         // Check if this session is still active
         if (currentDetectionSessionId !== thisSessionId)
@@ -2486,23 +2499,22 @@ async function startInputDetection()
             // The Rust backend now returns proper Star Citizen format
             // Examples: "js1_hat1_up", "js1_button3", "js2_axis2"
 
-            // Get the current stick's configuration
-            const currentStickData = currentStick === 'left' ? templateData.leftStick : templateData.rightStick;
+            // Get the current page's configuration
+            const currentPage = getCurrentPage();
+            const currentStickData = currentPage || (currentStick === 'left' ? templateData.leftStick : templateData.rightStick);
             const templateJsNum = (currentStickData && currentStickData.joystickNumber) || templateData.joystickNumber || 1;
-            const detectedJsNumber = currentStickData?.detectedJsNumber;
 
-            // Extract the actual js number from the detected input
-            const inputMatch = result.input_string.match(/^(js|gp)(\d+)_/);
-            const actualJsNum = inputMatch ? parseInt(inputMatch[2]) : null;
+            // For pages: use device_uuid to validate, for legacy sticks: use detectedJsNumber
+            const pageDeviceUuid = currentPage?.device_uuid;
+            const detectedDeviceUuid = result.device_uuid;
 
             // Validate that input is from the configured device (if configured)
-            if (detectedJsNumber && actualJsNum && actualJsNum !== detectedJsNumber)
+            if (pageDeviceUuid && detectedDeviceUuid && pageDeviceUuid !== detectedDeviceUuid)
             {
-                console.warn(`Input from js${actualJsNum} but expected js${detectedJsNumber}`);
-                const stickName = currentStick === 'left' ? 'Left Stick' : 'Right Stick';
-                const otherStickName = currentStick === 'left' ? 'Right Stick' : 'Left Stick';
+                console.warn(`Input from device ${detectedDeviceUuid} but expected ${pageDeviceUuid}`);
+                const pageName = currentPage?.name || 'this page';
                 document.getElementById('input-detection-status').textContent =
-                    `⚠️ That input is from a device not mapped to the ${stickName}. It may be mapped to the ${otherStickName} or not configured. Switch sticks or reconfigure your joystick mapping.`;
+                    `⚠️ That input is from a device not assigned to ${pageName}. Please use the device you configured for this page.`;
                 document.getElementById('input-detection-status').style.color = '#f0ad4e';
                 return;
             }
@@ -3090,7 +3102,6 @@ async function loadTemplate()
         // Update UI
         document.getElementById('template-name').value = templateData.name;
         document.getElementById('joystick-model').value = templateData.joystickModel;
-        updateStickMappingDisplay();
 
         // Load the first page's image if we have pages
         if (currentPageId && templateData.pages.length > 0)
@@ -3111,7 +3122,6 @@ async function loadTemplate()
                 resizeImage(img, 1024, (resizedImg) =>
                 {
                     loadedImage = resizedImg;
-                    document.getElementById('canvas-overlay').classList.add('hidden');
                     resizeCanvas();
                     requestAnimationFrame(() =>
                     {
@@ -3130,7 +3140,6 @@ async function loadTemplate()
                 resizeImage(img, 1024, (resizedImg) =>
                 {
                     loadedImage = resizedImg;
-                    document.getElementById('canvas-overlay').classList.add('hidden');
                     resizeCanvas();
                     requestAnimationFrame(() =>
                     {
@@ -3330,7 +3339,6 @@ function loadPersistedTemplate()
             // Update UI
             document.getElementById('template-name').value = templateData.name;
             document.getElementById('joystick-model').value = templateData.joystickModel;
-            updateStickMappingDisplay();
 
             // Load the first page's image if we have pages
             if (currentPageId && templateData.pages.length > 0)
@@ -3351,7 +3359,6 @@ function loadPersistedTemplate()
                     resizeImage(img, 1024, (resizedImg) =>
                     {
                         loadedImage = resizedImg;
-                        document.getElementById('canvas-overlay').classList.add('hidden');
                         resizeCanvas();
                         requestAnimationFrame(() =>
                         {
@@ -3370,7 +3377,6 @@ function loadPersistedTemplate()
                     resizeImage(img, 1024, (resizedImg) =>
                     {
                         loadedImage = resizedImg;
-                        document.getElementById('canvas-overlay').classList.add('hidden');
                         resizeCanvas();
                         requestAnimationFrame(() =>
                         {
@@ -3412,300 +3418,3 @@ window.markTemplateAsChanged = markAsChanged;
 // TEMPLATE JOYSTICK MAPPING
 // ============================================================================
 
-let currentDetectingStick = null; // 'left' or 'right'
-let detectionSessionId = null;
-
-async function openTemplateJoystickMappingModal()
-{
-    const modal = document.getElementById('template-joystick-mapping-modal');
-    modal.style.display = 'flex';
-
-    // Update the display to show current mappings
-    updateStickInfoDisplay();
-}
-
-function closeTemplateJoystickMappingModal()
-{
-    const modal = document.getElementById('template-joystick-mapping-modal');
-    modal.style.display = 'none';
-
-    // Stop any active detection
-    if (currentDetectingStick !== null)
-    {
-        stopStickDetection();
-    }
-}
-
-async function detectStick(stick)
-{
-    // If already detecting this stick, stop it
-    if (currentDetectingStick === stick)
-    {
-        stopStickDetection();
-        return;
-    }
-
-    // Stop any other detection first
-    if (currentDetectingStick !== null)
-    {
-        stopStickDetection();
-    }
-
-    currentDetectingStick = stick;
-    const buttonId = stick === 'right' ? 'detect-right-stick-btn' : 'detect-left-stick-btn';
-    const infoId = stick === 'right' ? 'right-stick-info' : 'left-stick-info';
-
-    const button = document.getElementById(buttonId);
-    const infoDiv = document.getElementById(infoId);
-
-    // Update UI to detecting state
-    if (button)
-    {
-        button.textContent = '⏹️ Stop Detecting';
-        button.classList.add('detecting');
-    }
-
-    if (infoDiv)
-    {
-        infoDiv.classList.add('detecting');
-        infoDiv.innerHTML = '<div style="color: #ffc107; font-weight: 500;">👂 Listening... Press any button on your joystick!</div>';
-    }
-
-    // Generate session ID
-    detectionSessionId = 'stick-detect-' + Date.now();
-    const sessionId = detectionSessionId;
-
-    try
-    {
-        console.log(`[STICK-DETECTION] Detecting ${stick} stick, session:`, sessionId);
-
-        const result = await invoke('wait_for_input_binding', {
-            sessionId: sessionId,
-            timeoutSecs: 15
-        });
-
-        // Check if this session is still active
-        if (detectionSessionId !== sessionId)
-        {
-            console.log(`[STICK-DETECTION] Session ${sessionId} cancelled, ignoring result`);
-            return;
-        }
-
-        if (result)
-        {
-            console.log(`[STICK-DETECTION] Detected input:`, result);
-
-            // Extract js number and device info
-            const match = result.input_string.match(/^(js|gp)(\d+)_/);
-            if (match)
-            {
-                const prefix = match[1];
-                const jsNumber = parseInt(match[2]);
-
-                // Get device name from backend (we'll use the input string for now)
-                const deviceName = result.display_name || `Device ${jsNumber}`;
-
-                // Store the mapping
-                const stickData = stick === 'right' ? templateData.rightStick : templateData.leftStick;
-                const targetJsNum = stick === 'right' ? 1 : 2; // Right = js1, Left = js2
-
-                stickData.detectedJsNumber = jsNumber;
-                stickData.detectedPrefix = prefix;
-                stickData.joystickNumber = targetJsNum;
-                stickData.physicalJoystickName = deviceName;
-                stickData.physicalJoystickId = jsNumber; // Use js number as ID for now
-
-                console.log(`[STICK-DETECTION] Mapped ${stick} stick: ${prefix}${jsNumber} → js${targetJsNum}`);
-
-                // Update display
-                if (infoDiv)
-                {
-                    infoDiv.classList.remove('detecting');
-                    infoDiv.classList.add('configured');
-                    infoDiv.innerHTML = `
-                        <div class="device-name">${deviceName}</div>
-                        <div class="device-details">Detected as: ${prefix}${jsNumber}</div>
-                        <div class="device-mapping">Maps to: js${targetJsNum} (${stick === 'right' ? 'Right' : 'Left'} Stick)</div>
-                    `;
-                }
-            }
-        }
-        else
-        {
-            // Timeout
-            if (infoDiv)
-            {
-                infoDiv.classList.remove('detecting');
-                infoDiv.innerHTML = '<div style="color: #d9534f;">⏱️ Timeout - no input detected. Try again.</div>';
-
-                setTimeout(() =>
-                {
-                    updateStickInfoDisplay();
-                }, 3000);
-            }
-        }
-    }
-    catch (error)
-    {
-        console.error('[STICK-DETECTION] Error:', error);
-        if (infoDiv)
-        {
-            infoDiv.classList.remove('detecting');
-            infoDiv.innerHTML = `<div style="color: #d9534f;">❌ Error: ${error.message || error}</div>`;
-
-            setTimeout(() =>
-            {
-                updateStickInfoDisplay();
-            }, 3000);
-        }
-    }
-    finally
-    {
-        // Reset button
-        if (button)
-        {
-            const btnId = stick === 'right' ? 'detect-right-stick-btn' : 'detect-left-stick-btn';
-            const btn = document.getElementById(btnId);
-            if (btn)
-            {
-                btn.textContent = stick === 'right' ? '🎮 Detect Right Stick' : '🎮 Detect Left Stick';
-                btn.classList.remove('detecting');
-            }
-        }
-
-        if (currentDetectingStick === stick)
-        {
-            currentDetectingStick = null;
-        }
-        detectionSessionId = null;
-    }
-}
-
-function stopStickDetection()
-{
-    if (currentDetectingStick === null) return;
-
-    console.log(`[STICK-DETECTION] Stopping detection for ${currentDetectingStick}`);
-
-    const buttonId = currentDetectingStick === 'right' ? 'detect-right-stick-btn' : 'detect-left-stick-btn';
-    const button = document.getElementById(buttonId);
-
-    if (button)
-    {
-        button.textContent = currentDetectingStick === 'right' ? '🎮 Detect Right Stick' : '🎮 Detect Left Stick';
-        button.classList.remove('detecting');
-    }
-
-    updateStickInfoDisplay();
-
-    currentDetectingStick = null;
-    detectionSessionId = null;
-}
-
-function updateStickInfoDisplay()
-{
-    // Update right stick info
-    const rightInfo = document.getElementById('right-stick-info');
-    if (rightInfo)
-    {
-        const rightStick = templateData.rightStick;
-        if (rightStick?.physicalJoystickName && rightStick?.detectedJsNumber)
-        {
-            rightInfo.classList.add('configured');
-            rightInfo.classList.remove('detecting');
-            rightInfo.innerHTML = `
-                <div class="device-name">${rightStick.physicalJoystickName}</div>
-                <div class="device-details">Detected as: ${rightStick.detectedPrefix || 'js'}${rightStick.detectedJsNumber}</div>
-                <div class="device-mapping">Maps to: js1 (Right Stick)</div>
-            `;
-        }
-        else
-        {
-            rightInfo.classList.remove('configured', 'detecting');
-            rightInfo.innerHTML = '<div class="not-configured">Not configured</div>';
-        }
-    }
-
-    // Update left stick info
-    const leftInfo = document.getElementById('left-stick-info');
-    if (leftInfo)
-    {
-        const leftStick = templateData.leftStick;
-        if (leftStick?.physicalJoystickName && leftStick?.detectedJsNumber)
-        {
-            leftInfo.classList.add('configured');
-            leftInfo.classList.remove('detecting');
-            leftInfo.innerHTML = `
-                <div class="device-name">${leftStick.physicalJoystickName}</div>
-                <div class="device-details">Detected as: ${leftStick.detectedPrefix || 'js'}${leftStick.detectedJsNumber}</div>
-                <div class="device-mapping">Maps to: js2 (Left Stick)</div>
-            `;
-        }
-        else
-        {
-            leftInfo.classList.remove('configured', 'detecting');
-            leftInfo.innerHTML = '<div class="not-configured">Not configured</div>';
-        }
-    }
-}
-
-async function saveTemplateJoystickMapping()
-{
-    // Validate: need at least one stick assigned
-    const hasRightStick = templateData.rightStick?.detectedJsNumber;
-    const hasLeftStick = templateData.leftStick?.detectedJsNumber;
-
-    if (!hasRightStick && !hasLeftStick)
-    {
-        const showAlert = window.showAlert || alert;
-        await showAlert('Please detect at least one joystick before saving.', 'No Joystick Detected');
-        return;
-    }
-
-    console.log('Saved template joystick mapping:', {
-        leftStick: templateData.leftStick,
-        rightStick: templateData.rightStick
-    });
-
-    markAsChanged();
-    updateStickMappingDisplay();
-    closeTemplateJoystickMappingModal();
-}
-
-function updateStickMappingDisplay()
-{
-    const leftDisplay = document.getElementById('left-stick-mapping');
-    const rightDisplay = document.getElementById('right-stick-mapping');
-
-    if (rightDisplay)
-    {
-        if (templateData.rightStick?.physicalJoystickName && templateData.rightStick?.detectedJsNumber)
-        {
-            const detectedNum = templateData.rightStick.detectedJsNumber;
-            const prefix = templateData.rightStick.detectedPrefix || 'js';
-            rightDisplay.textContent = `${templateData.rightStick.physicalJoystickName} (${prefix}${detectedNum} → js1)`;
-            rightDisplay.style.color = '#5cb85c';
-        }
-        else
-        {
-            rightDisplay.textContent = 'Not configured';
-            rightDisplay.style.color = '#999';
-        }
-    }
-
-    if (leftDisplay)
-    {
-        if (templateData.leftStick?.physicalJoystickName && templateData.leftStick?.detectedJsNumber)
-        {
-            const detectedNum = templateData.leftStick.detectedJsNumber;
-            const prefix = templateData.leftStick.detectedPrefix || 'js';
-            leftDisplay.textContent = `${templateData.leftStick.physicalJoystickName} (${prefix}${detectedNum} → js2)`;
-            leftDisplay.style.color = '#5cb85c';
-        }
-        else
-        {
-            leftDisplay.textContent = 'Not configured';
-            leftDisplay.style.color = '#999';
-        }
-    }
-}

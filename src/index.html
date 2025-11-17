@@ -38,7 +38,7 @@
       <!-- Header Row 1 -->
       <div class="header-row-1">
         <div class="header-logo">
-          <h1>Star Citizen Binding Utility <span id="app-version">v0.7.0</span></h1>
+          <h1>Star Citizen Binding Utility <span id="app-version">v0.7.1</span></h1>
           <div id="update-info" class="header-update-info"></div>
         </div>
         <div class="header-actions">
@@ -244,8 +244,9 @@
           <!-- Joystick Display -->
           <div class="joystick-display">
             <!-- Quick Tips -->
-            <div class="quick-tips" style="top:3rem;right:3rem;">Middle click to pan view<br>Scroll wheel to
-              zoom<br>Click on button boxes to show all actions<br>Grey actions are default SC bind actions</div>
+            <div class="quick-tips" style="top:3rem;right:3rem;">Middle or Right click to pan view<br>Scroll wheel to
+              zoom<br>Press <kbd>Tab</kbd> to switch pages<br>Click on button boxes to show all actions<br>Grey actions
+              are default SC bind actions</div>
 
             <div id="welcome-screen-visual" class="welcome-screen">
               <div class="welcome-content">
@@ -351,12 +352,6 @@
                 Joystick Model:
                 <input type="text" id="joystick-model" placeholder="e.g., Thrustmaster T16000M" />
               </label>
-              <button id="configure-template-joysticks-btn" class="btn btn-secondary btn-block">⚙️ Configure Joystick
-                Mapping</button>
-              <div id="stick-mapping-display" class="info-text" style="margin-top: 0.5rem;">
-                <div><strong>Left Stick:</strong> <span id="left-stick-mapping">Not configured</span></div>
-                <div><strong>Right Stick:</strong> <span id="right-stick-mapping">Not configured</span></div>
-              </div>
             </div>
 
             <div class="section">
@@ -408,8 +403,9 @@
           <main class="editor-panel">
             <div class="canvas-container" id="canvas-container">
               <!-- Quick Tips -->
-              <div class="quick-tips">Middle click to pan view<br>Scroll wheel to zoom<br>Press <kbd>F</kbd> to fit
-                view<br>Double click buttons to
+              <div class="quick-tips">Middle or Right click to pan view<br>Scroll wheel to zoom<br>Press <kbd>F</kbd> to
+                fit
+                view<br>Press <kbd>Tab</kbd> to switch pages<br>Double click buttons to
                 edit<br>Left click + drag buttons to move
               </div>
 
@@ -435,14 +431,6 @@
                 </div>
               </div>
               <canvas id="editor-canvas"></canvas>
-              <div id="canvas-overlay" class="canvas-overlay">
-                <div class="welcome-message">
-                  <h2>New Template</h2>
-                  <p>1. Click the "Configure Joystick Mapping" button to configure joystick mappings</p>
-                  <p>2. Use the "Load Joystick Image" button on the left</p>
-                  <p>3. Adjust your image mirror settings if needed</p>
-                </div>
-              </div>
             </div>
 
             <div class="edit-controls">
@@ -574,19 +562,19 @@
             <h3>📝 Template Editor Tips</h3>
             <p>When creating a joystick template:</p>
             <ol>
-              <li><strong>Configure Joystick Mapping First!</strong> Click the "Configure Joystick Mapping" button in
-                the
-                Template Info section before adding any buttons.</li>
-              <li>This tells the template which physical device corresponds to the left stick and which is the right
-                stick.</li>
-              <li>Without this mapping, the template won't know which device you're configuring buttons for.</li>
-              <li>You can test device detection by clicking "Test" next to each device to confirm you're pressing
-                buttons
-                on the correct stick.</li>
+              <li><strong>Configure Device for Each Page:</strong> Open the page editor and select which device this
+                page's buttons are for.</li>
+              <li>This tells the template which physical device corresponds to this page's buttons.</li>
+              <li>Without this device assignment, the template won't know which device you're configuring buttons for.
+              </li>
+              <li>You can test device detection by clicking "Test" next to the device dropdown to confirm you're
+                pressing buttons on the correct device.</li>
+              <li><strong>Navigate Pages Quickly:</strong> Press <kbd>Tab</kbd> to move forward through pages, or
+                <kbd>Shift+Tab</kbd> to move backward. Pages loop around.
+              </li>
             </ol>
             <p class="help-note"><strong>Tip:</strong> If you have a dual stick setup (e.g., VKB Gladiator), typically
-              the
-              left stick is js1 and right stick is js2, but this can vary!</p>
+              assign one page per device to keep your layout organized!</p>
           </div>
 
           <div class="help-section">
@@ -972,40 +960,7 @@
     </div>
   </div>
 
-  <!-- Template Joystick Mapping Modal -->
-  <div id="template-joystick-mapping-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Configure Joystick Mapping for Template</h2>
-      </div>
-      <div class="modal-body">
-        <p class="mapping-help">Click "Detect" for each stick, then press any button on the physical joystick you want
-          to use. The detected joystick will be automatically mapped.</p>
 
-        <div class="stick-mapping-section">
-          <div class="stick-section">
-            <h3>Right Stick (js1)</h3>
-            <div class="stick-info" id="right-stick-info">
-              <div class="not-configured">Not configured</div>
-            </div>
-            <button id="detect-right-stick-btn" class="btn btn-primary">🎮 Detect Right Stick</button>
-          </div>
-
-          <div class="stick-section">
-            <h3>Left Stick (js2)</h3>
-            <div class="stick-info" id="left-stick-info">
-              <div class="not-configured">Not configured</div>
-            </div>
-            <button id="detect-left-stick-btn" class="btn btn-primary">🎮 Detect Left Stick</button>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="template-joystick-mapping-save" class="btn btn-success">Save Mapping</button>
-        <button id="template-joystick-mapping-cancel" class="btn btn-secondary">Cancel</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Template Page Modal -->
   <div id="template-page-modal" class="modal" style="display: none;">
@@ -1038,16 +993,17 @@
               </div>
               <div style="margin-top: 0.75rem;">
                 <label style="font-size: 0.9em; color: var(--text-muted); margin-bottom: 0.25rem; display: block;">
-                  Select Device:
+                  Select The Device:
                 </label>
                 <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
                   <select id="page-device-select" style="flex: 1;"></select>
                   <button id="refresh-devices-btn" class="btn btn-secondary btn-sm"
                     title="Refresh device list">🔄</button>
                 </div>
-                <div class="info-text" style="margin-bottom: 0.75rem; font-size: 0.85em;">
-                  Choose a device from the list, or use the button below to detect it automatically.
-                </div>
+                <hr>
+                <label style="font-size: 0.9em; color: var(--text-muted); margin-bottom: 0.25rem; display: block;">
+                  Or Auto Detect The Device:
+                </label>
               </div>
               <button id="detect-device-btn" class="btn btn-primary">🎯 Press Button on Device</button>
               <div id="device-detection-status" class="info-text" style="margin-top: 0.5rem;">
@@ -1056,16 +1012,20 @@
             </div>
           </label>
 
-          <label>
-            Axis Mapping Profile:
-            <select id="template-page-axis-profile"></select>
-          </label>
-          <div class="info-text" id="template-page-axis-summary"></div>
+          <div class="device-detection-box">
 
-          <div class="custom-axis-actions">
-            <button id="open-custom-axis-modal" class="btn btn-secondary btn-sm">Configure Custom Mapping</button>
-            <span class="info-text">Use this if your device isn't listed or needs a unique mapping.</span>
+            <label>
+              Axis Mapping Profile:
+              <select id="template-page-axis-profile"></select>
+            </label>
+            <div class="info-text" id="template-page-axis-summary"></div>
+
+            <div class="custom-axis-actions">
+              <button id="open-custom-axis-modal" class="btn btn-secondary btn-sm">Configure Custom Mapping</button>
+              <span class="info-text">Use this if your device isn't listed or needs a unique mapping.</span>
+            </div>
           </div>
+
         </div>
 
         <!-- Image Section -->
@@ -1208,7 +1168,7 @@
   <div id="whats-new-modal" class="modal" style="display: none;">
     <div class="modal-content whats-new-modal-content">
       <div class="modal-header">
-        <h2>🎉 What's New in v0.7.0</h2>
+        <h2>🎉 What's New in v0.7.1</h2>
       </div>
       <div class="modal-body whats-new-body">
         <div class="whats-new-section">
@@ -1231,10 +1191,20 @@
           </ul>
         </div>
         <div class="whats-new-section">
+          <h3>🧩 0.7.1</h3>
+          <ul>
+            <li><strong>Template editor:</strong> Removed redundant device binding (as it's per page now).
+            <li><strong>Tab Shorcut:</strong> Added tab to lop through pages in template editor and visual view.</li>
+            <li><strong>Removing Bind:</strong> Fixed bug where removing a binding would remove ALL bindings of the same
+              type.</li>
+          </ul>
+        </div>
+        <div class="whats-new-section">
           <h3>🐛 Bug Fixes</h3>
           <ul>
             <li>Visual view axes no longer map to button types.</li>
             <li>Potential fix for unbound actions.</li>
+            <li>Potential fix incorrect axis.</li>
           </ul>
         </div>
         <div class="whats-new-footer">

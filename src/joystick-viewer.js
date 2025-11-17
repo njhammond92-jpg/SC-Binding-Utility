@@ -211,6 +211,22 @@ function initializeEventListeners()
         });
     }
 
+    // Tab key to navigate pages
+    document.addEventListener('keydown', (e) =>
+    {
+        if (e.key === 'Tab' && currentTemplate && currentTemplate.pages)
+        {
+            e.preventDefault(); // Prevent default tab focus behavior
+            const maxPages = currentTemplate.pages.length;
+            if (maxPages > 1)
+            {
+                const direction = e.shiftKey ? -1 : 1; // Shift+Tab goes back, Tab goes forward
+                const nextPageIndex = (currentPageIndex + direction + maxPages) % maxPages;
+                switchPage(nextPageIndex);
+            }
+        }
+    });
+
     // Hide defaults toggle button
     const hideDefaultsBtn = document.getElementById('hide-defaults-toggle');
     if (hideDefaultsBtn)
@@ -716,33 +732,37 @@ function loadPageImage()
         imageFlipped = (currentTemplate.imageFlipped === currentPageIndex);
     }
 
-    if (!imageDataUrl)
+    if (imageDataUrl)
     {
-        console.warn('No image found for current page');
-        return;
+        // Load the image
+        const img = new Image();
+        img.onload = () =>
+        {
+            // Store image reference for resize handling
+            window.viewerImage = img;
+            window.viewerImageFlipped = imageFlipped;
+
+            centerViewOnImage();
+
+            // Resize canvas to container and draw
+            resizeViewerCanvas();
+        };
+
+        img.src = imageDataUrl;
     }
-
-    // Load the image
-    const img = new Image();
-    img.onload = () =>
+    else
     {
-        // Store image reference for resize handling
-        window.viewerImage = img;
-        window.viewerImageFlipped = imageFlipped;
+        // No image for this page - render without background
+        window.viewerImage = null;
+        window.viewerImageFlipped = false;
 
-        centerViewOnImage();
-
-        // Resize canvas to container and draw
+        // Still resize canvas and draw buttons
         resizeViewerCanvas();
-    };
-
-    img.src = imageDataUrl;
+    }
 }
 
 function resizeViewerCanvas()
 {
-    if (!window.viewerImage) return;
-
     const container = document.getElementById('viewer-canvas-container');
     if (!container) return;
 
@@ -773,17 +793,20 @@ function resizeViewerCanvas()
     ctx.translate(pan.x, pan.y);
     ctx.scale(zoom, zoom);
 
-    // Draw the image with flip based on stored flip state
-    ctx.save();
-    const shouldFlip = window.viewerImageFlipped || false;
-
-    if (shouldFlip)
+    // Draw the image with flip based on stored flip state (if image exists)
+    if (window.viewerImage)
     {
-        ctx.translate(window.viewerImage.width, 0);
-        ctx.scale(-1, 1);
+        ctx.save();
+        const shouldFlip = window.viewerImageFlipped || false;
+
+        if (shouldFlip)
+        {
+            ctx.translate(window.viewerImage.width, 0);
+            ctx.scale(-1, 1);
+        }
+        ctx.drawImage(window.viewerImage, 0, 0);
+        ctx.restore();
     }
-    ctx.drawImage(window.viewerImage, 0, 0);
-    ctx.restore();
 
     // Draw all buttons with their bindings (without flip)
     // Don't track bounds for normal drawing - we need to populate clickable boxes

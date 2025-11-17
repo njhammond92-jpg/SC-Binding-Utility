@@ -1,4 +1,4 @@
-use gilrs::{Axis, Button, EventType, Gilrs};
+use gilrs::{Button, EventType, Gilrs};
 use once_cell::sync::Lazy;
 use rusty_xinput::XInputHandle;
 use serde::Serialize;
@@ -263,6 +263,26 @@ fn extract_index_from_code(code: &gilrs::ev::Code) -> Option<u32> {
     None
 }
 
+/// Extract both the kind (Button/Axis) and index from the Code debug representation
+/// Returns (is_axis, index) where is_axis is true for axes, false for buttons
+fn extract_code_info(code: &gilrs::ev::Code) -> Option<(bool, u32)> {
+    let code_str = format!("{:?}", code);
+    
+    // Determine if this is an axis or button by checking the kind field
+    let is_axis = code_str.contains("kind: Axis");
+    
+    // Extract the index
+    if let Some(start) = code_str.find("index: ") {
+        let rest = &code_str[start + 7..];
+        if let Some(end) = rest.find(' ') {
+            if let Ok(index) = rest[..end].parse::<u32>() {
+                return Some((is_axis, index + 1)); // +1 for 1-based indexing
+            }
+        }
+    }
+    None
+}
+
 use std::collections::HashMap;
 
 // Axis state tracking to prevent duplicate detections
@@ -356,36 +376,8 @@ pub fn wait_for_input(
     }
 
     // Track axis states to prevent duplicate triggers
+    // We'll initialize states dynamically as axes are moved to support any device
     let mut axis_states: HashMap<(usize, u32), AxisState> = HashMap::new();
-
-    // Pre-initialize all axes to their current state to prevent false triggers on startup
-    for (_id, gamepad) in gilrs.gamepads() {
-        let joystick_id = usize::from(gamepad.id());
-
-        // Initialize all known axes
-        for axis_idx in 1..=6 {
-            let axis = match axis_idx {
-                1 => Some(Axis::LeftStickX),
-                2 => Some(Axis::LeftStickY),
-                3 => Some(Axis::RightStickX),
-                4 => Some(Axis::RightStickY),
-                5 => Some(Axis::LeftZ),
-                6 => Some(Axis::RightZ),
-                _ => None,
-            };
-
-            if let Some(axis) = axis {
-                let value = gamepad.axis_data(axis).map(|a| a.value()).unwrap_or(0.0);
-                axis_states.insert(
-                    (joystick_id, axis_idx),
-                    AxisState {
-                        last_value: value,
-                        last_triggered_direction: None,
-                    },
-                );
-            }
-        }
-    }
 
     let start = Instant::now();
     let timeout = Duration::from_secs(timeout_secs);
@@ -525,19 +517,14 @@ pub fn wait_for_input(
                     let power_info = format!("{:?}", gamepad.power_info());
                     let is_ff = gamepad.is_ff_supported();
 
-                    // Extract axis index from the Code debug representation
-                    let code_str = format!("{:?}", code);
-                    let axis_index = if let Some(start) = code_str.find("index: ") {
-                        let rest = &code_str[start + 7..];
-                        if let Some(end) = rest.find(' ') {
-                            rest[..end].parse::<u32>().unwrap_or(0) + 1 // +1 for 1-based indexing
-                        } else {
-                            0
+                    // Extract axis index and verify this is actually an axis event
+                    if let Some((is_axis, axis_index)) = extract_code_info(&code) {
+                        if !is_axis {
+                            // Code says this is a button, not an axis - skip it
+                            eprintln!("AxisChanged event but Code indicates Button (index {})", axis_index);
+                            continue;
                         }
-                    } else {
-                        0
-                    };
-
+                    
                     if axis_index > 0 {
                         let axis_key = (joystick_id, axis_index);
 
@@ -589,6 +576,7 @@ pub fn wait_for_input(
                             state.last_value = value;
 
                             // Get friendly axis name (using Star Citizen naming convention)
+                            // Support more than 6 axes for advanced joysticks
                             let axis_name = match axis_index {
                                 1 => "X",
                                 2 => "Y",
@@ -596,7 +584,7 @@ pub fn wait_for_input(
                                 4 => "RotY",
                                 5 => "Z",
                                 6 => "RotZ",
-                                _ => "Axis",
+                                _ => &format!("Axis{}", axis_index), // For axes beyond the standard 6
                             };
 
                             // Get device UUID
@@ -633,6 +621,7 @@ pub fn wait_for_input(
                             }));
                         }
                     }
+                    } // End of if let Some((is_axis, axis_index))
                 }
                 _ => {}
             }
@@ -873,36 +862,8 @@ pub fn wait_for_multiple_inputs(
     let mut gilrs = Gilrs::new().map_err(|e| e.to_string())?;
 
     // Track axis states to prevent duplicate triggers
+    // Track axis states - dynamically initialized as axes are moved
     let mut axis_states: HashMap<(usize, u32), AxisState> = HashMap::new();
-
-    // Pre-initialize all axes to their current state to prevent false triggers on startup
-    for (_id, gamepad) in gilrs.gamepads() {
-        let joystick_id = usize::from(gamepad.id());
-
-        // Initialize all known axes
-        for axis_idx in 1..=6 {
-            let axis = match axis_idx {
-                1 => Some(Axis::LeftStickX),
-                2 => Some(Axis::LeftStickY),
-                3 => Some(Axis::RightStickX),
-                4 => Some(Axis::RightStickY),
-                5 => Some(Axis::LeftZ),
-                6 => Some(Axis::RightZ),
-                _ => None,
-            };
-
-            if let Some(axis) = axis {
-                let value = gamepad.axis_data(axis).map(|a| a.value()).unwrap_or(0.0);
-                axis_states.insert(
-                    (joystick_id, axis_idx),
-                    AxisState {
-                        last_value: value,
-                        last_triggered_direction: None,
-                    },
-                );
-            }
-        }
-    }
 
     let start = Instant::now();
     let initial_timeout = Duration::from_secs(initial_timeout_secs);
@@ -1041,17 +1002,12 @@ pub fn wait_for_multiple_inputs(
                     let device_prefix = if is_gp { "gp" } else { "js" };
                     let device_type_name = if is_gp { "Gamepad" } else { "Joystick" };
 
-                    let code_str = format!("{:?}", code);
-                    let axis_index = if let Some(start) = code_str.find("index: ") {
-                        let rest = &code_str[start + 7..];
-                        if let Some(end) = rest.find(' ') {
-                            rest[..end].parse::<u32>().unwrap_or(0) + 1
-                        } else {
-                            0
+                    // Extract axis index and verify this is an axis event
+                    if let Some((is_axis, axis_index)) = extract_code_info(&code) {
+                        if !is_axis {
+                            // Code indicates this is a button, not an axis
+                            continue;
                         }
-                    } else {
-                        0
-                    };
 
                     if axis_index > 0 {
                         let axis_key = (joystick_id, axis_index);
@@ -1091,14 +1047,15 @@ pub fn wait_for_multiple_inputs(
                             state.last_triggered_direction = Some(should_trigger_positive);
                             state.last_value = value;
 
-                            let axis_name = match axis {
-                                Axis::LeftStickX => "Left Stick X",
-                                Axis::LeftStickY => "Left Stick Y",
-                                Axis::RightStickX => "Right Stick X",
-                                Axis::RightStickY => "Right Stick Y",
-                                Axis::LeftZ => "Left Z",
-                                Axis::RightZ => "Right Z",
-                                _ => "Axis",
+                            // Use index-based axis naming instead of gilrs::Axis enum
+                            let axis_name = match axis_index {
+                                1 => "X",
+                                2 => "Y",
+                                3 => "RotX",
+                                4 => "RotY",
+                                5 => "Z",
+                                6 => "RotZ",
+                                _ => &format!("Axis{}", axis_index),
                             };
 
                             // Collect extended debug info
@@ -1139,6 +1096,10 @@ pub fn wait_for_multiple_inputs(
                             None
                         }
                     } else {
+                        None
+                    }
+                    } // End of if let Some((is_axis, axis_index))
+                    else {
                         None
                     }
                 }
@@ -1245,35 +1206,8 @@ pub fn wait_for_inputs_with_events(
     }
 
     // Track axis states to prevent duplicate triggers
+    // Track axis states - dynamically initialized as axes are moved
     let mut axis_states: HashMap<(usize, u32), AxisState> = HashMap::new();
-
-    // Pre-initialize all axes to their current state
-    for (_id, gamepad) in gilrs.gamepads() {
-        let joystick_id = usize::from(gamepad.id());
-
-        for axis_idx in 1..=6 {
-            let axis = match axis_idx {
-                1 => Some(Axis::LeftStickX),
-                2 => Some(Axis::LeftStickY),
-                3 => Some(Axis::RightStickX),
-                4 => Some(Axis::RightStickY),
-                5 => Some(Axis::LeftZ),
-                6 => Some(Axis::RightZ),
-                _ => None,
-            };
-
-            if let Some(axis) = axis {
-                let value = gamepad.axis_data(axis).map(|a| a.value()).unwrap_or(0.0);
-                axis_states.insert(
-                    (joystick_id, axis_idx),
-                    AxisState {
-                        last_value: value,
-                        last_triggered_direction: None,
-                    },
-                );
-            }
-        }
-    }
 
     let start = Instant::now();
     let initial_timeout = Duration::from_secs(initial_timeout_secs);
@@ -1417,20 +1351,17 @@ pub fn wait_for_inputs_with_events(
                     let device_prefix = if is_gp { "gp" } else { "js" };
                     let device_type_name = if is_gp { "Gamepad" } else { "Joystick" };
 
-                    let axis_index = match axis {
-                        Axis::LeftStickX => 1,
-                        Axis::LeftStickY => 2,
-                        Axis::RightStickX => 3,
-                        Axis::RightStickY => 4,
-                        Axis::LeftZ => 5,
-                        Axis::RightZ => 6,
-                        _ => 0,
-                    };
+                    // Extract axis index from Code instead of using gilrs::Axis enum
+                    if let Some((is_axis, axis_index)) = extract_code_info(&code) {
+                        if !is_axis {
+                            // Code indicates button, not axis
+                            continue;
+                        }
 
                     if axis_index > 0 {
                         let axis_key = (joystick_id, axis_index);
                         let state = axis_states.entry(axis_key).or_insert(AxisState {
-                            last_value: 0.0,
+                            last_value: value, // Initialize with current value
                             last_triggered_direction: None,
                         });
 
@@ -1460,17 +1391,16 @@ pub fn wait_for_inputs_with_events(
                             let direction = if is_positive { "positive" } else { "negative" };
                             let direction_symbol = if is_positive { "+" } else { "-" };
 
-                            let axis_name = match axis {
-                                Axis::LeftStickX => "X",
-                                Axis::LeftStickY => "Y",
-                                Axis::RightStickX => "RX",
-                                Axis::RightStickY => "RY",
-                                Axis::LeftZ => "Z",
-                                Axis::RightZ => "RZ",
-                                _ => "Unknown",
+                            // Use index-based axis naming
+                            let axis_name = match axis_index {
+                                1 => "X",
+                                2 => "Y",
+                                3 => "RotX",
+                                4 => "RotY",
+                                5 => "Z",
+                                6 => "RotZ",
+                                _ => &format!("Axis{}", axis_index),
                             };
-
-                            let direction_symbol = if direction == "positive" { "+" } else { "-" };
 
                             // Collect extended debug info
                             let raw_axis_code = format!("{:?}", axis);
@@ -1510,6 +1440,10 @@ pub fn wait_for_inputs_with_events(
                             None
                         }
                     } else {
+                        None
+                    }
+                    } // End of if let Some((is_axis, axis_index))
+                    else {
                         None
                     }
                 }

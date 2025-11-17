@@ -373,7 +373,7 @@ function openPageModal(pageId = null)
         const page = state.template.pages.find(p => p.id === pageId);
         if (page)
         {
-            dom.pageModalTitle.textContent = 'Edit Page';
+            dom.pageModalTitle.textContent = `Edit Page: ${page.name || 'Untitled Page'}`;
             dom.pageNameInput.value = page.name || '';
 
             // Show existing device info
@@ -453,8 +453,22 @@ function openPageModal(pageId = null)
 
     dom.deviceDetectionStatus.textContent = 'Press any button on your joystick or gamepad to identify it.';
     updateAxisSummary();
+
+    // Add input listener to update modal title as user types page name
+    dom.pageNameInput.removeEventListener('input', updatePageModalTitle);
+    dom.pageNameInput.addEventListener('input', updatePageModalTitle);
+
     dom.pageModal.style.display = 'flex';
     dom.pageNameInput.focus();
+}
+
+function updatePageModalTitle()
+{
+    const pageName = dom.pageNameInput.value.trim() || 'Untitled Page';
+    if (state.modalEditingPageId)
+    {
+        dom.pageModalTitle.textContent = `Edit Page: ${pageName}`;
+    }
 }
 
 function closePageModal()
@@ -536,7 +550,6 @@ function savePageFromModal()
                             {
                                 window.setLoadedImage(img);
                             }
-                            document.getElementById('canvas-overlay')?.classList.add('hidden');
                             requestAnimationFrame(() =>
                             {
                                 if (typeof window.redraw === 'function')
@@ -558,7 +571,6 @@ function savePageFromModal()
                         {
                             window.setLoadedImage(img);
                         }
-                        document.getElementById('canvas-overlay')?.classList.add('hidden');
                         requestAnimationFrame(() =>
                         {
                             if (typeof window.redraw === 'function')
@@ -576,7 +588,6 @@ function savePageFromModal()
                     {
                         window.setLoadedImage(null);
                     }
-                    document.getElementById('canvas-overlay')?.classList.remove('hidden');
                     requestAnimationFrame(() =>
                     {
                         if (typeof window.redraw === 'function')
@@ -837,7 +848,6 @@ function onPageImageFileSelected(e)
                 state.modalImageDataUrl = resizedImg.src;
 
                 window.loadedImage = resizedImg;
-                document.getElementById('canvas-overlay').classList.add('hidden');
                 if (typeof window.redraw === 'function')
                 {
                     window.redraw();
@@ -1370,3 +1380,6 @@ export function refreshTemplatePagesUI(templateOverride = null)
 
     renderPageList();
 }
+
+// Expose selectPage to window so other modules can select pages
+window.selectPage = selectPage;
