@@ -1,0 +1,751 @@
+/* Quick Tips */
+.quick-tips {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+    z-index: 99;
+    pointer-events: none;
+    letter-spacing: 0.3px;
+    text-align: right;
+}
+
+/* Template Editor Specific Styles */
+
+.editor-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.editor-sidebar {
+    width: 320px;
+    background-color: var(--bg-dark);
+    border-right: 1px solid var(--bg-light);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.editor-sidebar .section {
+    padding: 1rem;
+    border: 1px solid var(--bg-lightest);
+    background: var(--bg-light);
+    margin: 1rem;
+    border-radius: 6px;
+}
+
+.editor-sidebar h3 {
+    margin: -1rem -1rem 6px -1rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    background: var(--bg-darkest);
+    padding: 0.5rem 0.5rem 0.5rem 15px;
+    border-radius: 6px 6px 0 0;
+}
+
+.editor-sidebar label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.editor-sidebar input[type="text"] {
+    width: 100%;
+}
+
+.btn-block {
+    width: 100%;
+    text-align: center;
+}
+
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+.btn-danger {
+    background-color: #c74444;
+    color: white;
+    border-color: #c74444;
+}
+
+.btn-danger:hover {
+    background-color: #d9534f;
+    border-color: #d9534f;
+}
+
+.info-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+/* Button List */
+.button-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 0.75rem;
+}
+
+.button-item {
+    padding: 0.75rem;
+    background-color: var(--bg-medium);
+    border: 1px solid var(--bg-light);
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.button-item:hover {
+    background-color: var(--bg-light);
+    border-color: var(--accent-primary);
+}
+
+.button-item.selected {
+    border-color: var(--accent-primary);
+    background-color: var(--bg-light);
+}
+
+.button-item-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.button-item-coords {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.empty-state-small {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Instructions */
+.instructions {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.instructions p {
+    margin: 0.5rem 0;
+}
+
+.instructions strong {
+    color: var(--text-primary);
+}
+
+.instructions ol,
+.instructions ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.beta-badge {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(78, 201, 176, 0.15);
+    color: var(--accent-color, #4ec9b0);
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(78, 201, 176, 0.4);
+}
+
+.template-pages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.template-page-card {
+    border: 1px solid var(--bg-light);
+    border-left: 3px solid transparent;
+    background: var(--bg-dark);
+    padding: 0.65rem;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    cursor: pointer;
+}
+
+.template-page-card:hover {
+    border-color: var(--bg-medium);
+}
+
+.template-page-card.active {
+    border-color: rgba(78, 201, 176, 0.5);
+    border-left-color: #4ec9b0;
+    background: rgba(78, 201, 176, 0.1);
+}
+
+.template-page-name {
+    font-weight: 600;
+    display: block;
+}
+
+.template-page-device {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.template-page-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.template-page-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.template-page-actions button {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.6rem;
+}
+
+.page-modal-device-row {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.page-modal-device-row select {
+    flex: 1;
+}
+
+.device-detection-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--bg-darkest);
+    border: 1px solid var(--bg-lightest);
+    border-radius: 6px;
+}
+
+.detected-device-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-darkest);
+    border: 2px solid var(--bg-light);
+    border-radius: 6px;
+    min-height: 60px;
+    transition: all 0.3s ease;
+}
+
+.detected-device-info.detected {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.detected-device-info .device-icon {
+    font-size: 1.8rem;
+}
+
+.detected-device-info .device-info-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detected-device-info .device-name {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.detected-device-info.detected .device-name {
+    color: var(--text-primary);
+}
+
+.detected-device-info .device-uuid {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: 'Courier New', monospace;
+}
+
+.custom-axis-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.custom-axis-table {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.5rem;
+}
+
+.custom-axis-row {
+    border: 1px solid var(--bg-light);
+    border-radius: 5px;
+    padding: 0.5rem;
+    background: var(--bg-dark);
+    transition: all 0.2s ease;
+}
+
+.custom-axis-row.axis-assigned {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.custom-axis-row.detecting {
+    border-color: #ffc107;
+    background: rgba(255, 193, 7, 0.1);
+    animation: pulse-glow 1s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px rgba(255, 193, 7, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 15px rgba(255, 193, 7, 0.6);
+    }
+}
+
+.custom-axis-row label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.axis-value-display {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+    font-family: 'Courier New', monospace;
+}
+
+.axis-value-display.active {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.axis-detection-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--bg-dark);
+    border-radius: 5px;
+}
+
+.device-test-section {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-dark);
+    border-radius: 5px;
+    border: 1px solid var(--bg-light);
+}
+
+#device-test-status {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+#device-test-status.detecting {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid #ffc107;
+    color: #ffc107;
+}
+
+#device-test-status.detected {
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid #4caf50;
+    color: #4caf50;
+}
+
+.instructions li {
+    margin: 0.25rem 0;
+}
+
+/* Editor Panel */
+.editor-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--bg-darkest);
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+}
+
+.canvas-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background-color: var(--bg-darkest);
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+    min-height: 0;
+    min-width: 0;
+}
+
+#editor-canvas {
+    display: block;
+    cursor: crosshair;
+    image-rendering: high-quality;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+
+
+.welcome-message {
+    text-align: center;
+    padding: 2rem;
+}
+
+.welcome-message h2 {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.welcome-message p {
+    color: var(--text-muted);
+}
+
+/* Zoom Controls */
+.template-controls-panel {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: rgba(20, 24, 28, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+}
+
+.template-controls-panel .control-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.template-controls-panel .stick-selector,
+.template-controls-panel .page-selector {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.template-controls-panel .toolbar-page-btn {
+    background: rgba(30, 30, 30, 0.85);
+    border: 1px solid #555;
+    color: #ddd;
+    padding: 0.35rem 0.8rem;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.template-controls-panel .toolbar-page-btn:hover {
+    border-color: #777;
+    background: rgba(40, 40, 40, 0.9);
+}
+
+.template-controls-panel .toolbar-page-btn.active {
+    background: rgba(74, 158, 255, 0.7);
+    border-color: #4a9eff;
+    color: #fff;
+    font-weight: 500;
+}
+
+.template-controls-panel .toolbar-page-btn.active:hover {
+    background: rgba(90, 170, 255, 0.85);
+    border-color: #6fb3ff;
+}
+
+.template-controls-panel .control-select {
+    background: rgba(30, 30, 30, 0.85);
+    border: 1px solid #555;
+    color: #ddd;
+    padding: 0.35rem 0.6rem;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    min-width: 120px;
+    transition: all 0.2s ease;
+}
+
+.template-controls-panel .control-select:hover:not(:disabled) {
+    border-color: #777;
+    background: rgba(40, 40, 40, 0.9);
+}
+
+.template-controls-panel .control-select:focus {
+    outline: none;
+    border-color: #4a9eff;
+    box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.3);
+}
+
+.template-controls-panel .control-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.template-controls-panel .control-divider {
+    width: 1px;
+    height: 28px;
+    background: #444;
+    margin: 0 0.25rem;
+}
+
+/* Control button style overrides for template panel */
+.template-controls-panel .control-btn.btn-success {
+    background: rgba(40, 167, 69, 0.7);
+    border-color: #91e9a5;
+    color: #fff;
+}
+
+.template-controls-panel .control-btn.btn-success:hover {
+    background: rgba(109, 183, 127, 0.9);
+    border-color: #c1dfc8;
+    color: #fff;
+}
+
+.zoom-controls {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    background-color: var(--bg-dark);
+    border: 1px solid var(--bg-light);
+    border-radius: 4px;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+/* Edit Controls - Floating toolbar for Add/Delete buttons */
+.edit-controls {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    background-color: var(--bg-dark);
+    border: 1px solid var(--bg-light);
+    border-radius: 4px;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+.edit-controls .btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+    min-width: auto;
+}
+
+.edit-controls .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    background-color: var(--bg-medium);
+    border: 1px solid var(--bg-light);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background-color: var(--bg-light);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+#zoom-level {
+    min-width: 50px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+/* Stick Selector */
+.stick-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin-right: 1rem;
+}
+
+.stick-selector .btn {
+    min-width: 100px;
+}
+
+.stick-selector .btn.active {
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+/* Joystick Number Picker */
+.joystick-number-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-right: 1.5rem;
+    padding: 0 1rem;
+    border-left: 1px solid var(--bg-light);
+    border-right: 1px solid var(--bg-light);
+}
+
+.joystick-number-picker label {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.joystick-number-picker select {
+    padding: 0.5rem 0.75rem;
+    background-color: var(--bg-medium);
+    border: 1px solid var(--bg-light);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    min-width: 150px;
+}
+
+.joystick-number-picker select:hover {
+    border-color: var(--accent-primary);
+}
+
+.joystick-number-picker select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(52, 168, 224, 0.1);
+}
+
+.joystick-number-value {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-family: monospace;
+    background-color: var(--bg-medium);
+    padding: 0.3rem 0.6rem;
+    border-radius: 3px;
+    min-width: 35px;
+    text-align: center;
+}
+
+/* Canvas Drawing Styles */
+.handle {
+    fill: var(--accent-primary);
+    stroke: white;
+    stroke-width: 2;
+    cursor: move;
+}
+
+.handle:hover {
+    fill: var(--accent-hover);
+}
+
+.connection-line {
+    stroke: var(--accent-primary);
+    stroke-width: 2;
+    stroke-dasharray: 5, 5;
+}
+
+.label-box {
+    fill: var(--bg-dark);
+    stroke: var(--accent-primary);
+    stroke-width: 2;
+}
+
+.label-text {
+    fill: var(--text-primary);
+    font-family: 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 14px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+}
+
+/* Highlight Animation */
+@keyframes highlightPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(52, 168, 224, 0.7);
+        background-color: var(--bg-secondary);
+    }
+
+    50% {
+        box-shadow: 0 0 0 8px rgba(52, 168, 224, 0);
+        background-color: rgba(52, 168, 224, 0.15);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(52, 168, 224, 0);
+        background-color: var(--bg-secondary);
+    }
+}
+
+.highlight-pulse {
+    animation: highlightPulse 1s ease-in-out 3;
+    border-color: var(--accent-primary) !important;
+}
